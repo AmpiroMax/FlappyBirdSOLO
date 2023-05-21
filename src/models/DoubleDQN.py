@@ -82,7 +82,7 @@ def policy(
         predicted_actions_rewards / temp, dim=0).detach().cpu().numpy()
     print(probas)
 
-    if np.random.uniform(0, 1) < 1e-2:
+    if np.random.uniform(0, 1) < 5e-2:
         action = np.random.choice(len(predicted_actions_rewards))
     else:
         action = np.random.choice(len(predicted_actions_rewards), p=probas)
