@@ -1,0 +1,6 @@
+# Python
+__pycache__
+src.egg-info
+
+# Other
+.DS*
