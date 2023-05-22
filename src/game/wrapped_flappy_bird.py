@@ -2,7 +2,7 @@ import random
 from itertools import cycle
 import copy
 import pygame
-
+import numpy as np
 import src.game.flappy_bird_utils as flappy_bird_utils
 
 FPS = 30
@@ -54,13 +54,13 @@ class GameState:
         self.playerMinVelY = -8  # min vel along Y, max ascend speed
         self.playerAccY = 1  # players downward accleration
         # players speed on flapping  # FIXME придумайте, как оптимизировать шаг
-        self.playerFlapAcc = -9
+        self.playerFlapAcc = -4
         self.playerFlapped = False  # True when player flaps
         # self.playerRot = 45  # player's rotation
         self.playerVelRot = 3  # angular speed
         self.playerRotThr = 0  # rotation threshold
 
-    def frame_step(self, input_action):
+    def frame_step(self, input_action, game_mode=False):
         pygame.event.pump()
 
         reward = 0.1  # FIXME придумайте стратегию награды/наказания
@@ -79,7 +79,7 @@ class GameState:
             pipeMidPos = pipe['x'] + PIPE_WIDTH / 2
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 self.score += 1
-                reward = 10  # FIXME придумайте стратегию награды/наказания
+                reward = 5  # FIXME придумайте стратегию награды/наказания
 
         # playerIndex basex change
         if (self.loopIter + 1) % 3 == 0:
@@ -125,7 +125,7 @@ class GameState:
         if isCrash:
             terminal = True
             self.__init__()
-            reward = -1  # FIXME придумайте стратегию награды/наказания
+            reward = -0.5  # FIXME придумайте стратегию награды/наказания
 
         # draw sprites
         SCREEN.blit(IMAGES['background'], (0, 0))
@@ -145,80 +145,81 @@ class GameState:
 
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         pygame.display.update()
-        FPSCLOCK.tick(300)
+        if game_mode:
+            FPSCLOCK.tick(FPS)
 
         return image_data, reward, terminal
 
-    def virtual_step(self, input_action):
-        reward = 0.0
-        terminal = False
+    # def virtual_step(self, input_action):
+    #     reward = 0.0
+    #     terminal = False
 
-        prev_player_x = self.playerx
-        prev_player_y = self.playery
-        prev_playerVelyY = self.playerVelY
-        prev_playerFlapped = self.playerFlapped
-        prev_score = self.score
-        prev_upperPipes = copy.deepcopy(self.upperPipes)
-        prev_lowerPipes = copy.deepcopy(self.lowerPipes)
+    #     prev_player_x = self.playerx
+    #     prev_player_y = self.playery
+    #     prev_playerVelyY = self.playerVelY
+    #     prev_playerFlapped = self.playerFlapped
+    #     prev_score = self.score
+    #     prev_upperPipes = copy.deepcopy(self.upperPipes)
+    #     prev_lowerPipes = copy.deepcopy(self.lowerPipes)
 
-        # input_actions == 0: do nothing
-        # input_actions == 1: flap the bird
-        if input_action == 1:
-            if self.playery > -2 * PLAYER_HEIGHT:
-                self.playerVelY = self.playerFlapAcc
-                self.playerFlapped = True
+    #     # input_actions == 0: do nothing
+    #     # input_actions == 1: flap the bird
+    #     if input_action == 1:
+    #         if self.playery > -2 * PLAYER_HEIGHT:
+    #             self.playerVelY = self.playerFlapAcc
+    #             self.playerFlapped = True
 
-        # check for score
-        playerMidPos = self.playerx + PLAYER_WIDTH / 2
-        for pipe in self.upperPipes:
-            pipeMidPos = pipe['x'] + PIPE_WIDTH / 2
-            if pipeMidPos <= playerMidPos < pipeMidPos + 4:
-                self.score += 1
-                reward = 1
+    #     # check for score
+    #     playerMidPos = self.playerx + PLAYER_WIDTH / 2
+    #     for pipe in self.upperPipes:
+    #         pipeMidPos = pipe['x'] + PIPE_WIDTH / 2
+    #         if pipeMidPos <= playerMidPos < pipeMidPos + 4:
+    #             self.score += 1
+    #             reward = 1
 
-        # player's movement
-        if self.playerVelY < self.playerMaxVelY and not self.playerFlapped:
-            self.playerVelY += self.playerAccY
-        if self.playerFlapped:
-            self.playerFlapped = False
-        self.playery += min(self.playerVelY, BASEY -
-                            self.playery - PLAYER_HEIGHT)
-        if self.playery < 0:
-            self.playery = 0
+    #     # player's movement
+    #     if self.playerVelY < self.playerMaxVelY and not self.playerFlapped:
+    #         self.playerVelY += self.playerAccY
+    #     if self.playerFlapped:
+    #         self.playerFlapped = False
+    #     self.playery += min(self.playerVelY, BASEY -
+    #                         self.playery - PLAYER_HEIGHT)
+    #     if self.playery < 0:
+    #         self.playery = 0
 
-        # move pipes to left
-        for uPipe, lPipe in zip(self.upperPipes, self.lowerPipes):
-            uPipe['x'] += self.pipeVelX
-            lPipe['x'] += self.pipeVelX
+    #     # move pipes to left
+    #     for uPipe, lPipe in zip(self.upperPipes, self.lowerPipes):
+    #         uPipe['x'] += self.pipeVelX
+    #         lPipe['x'] += self.pipeVelX
 
-        # add new pipe when first pipe is about to touch left of screen
-        if 0 < self.upperPipes[0]['x'] < 5:
-            newPipe = getRandomPipe()
-            self.upperPipes.append(newPipe[0])
-            self.lowerPipes.append(newPipe[1])
+    #     # add new pipe when first pipe is about to touch left of screen
+    #     if 0 < self.upperPipes[0]['x'] < 5:
+    #         newPipe = getRandomPipe()
+    #         self.upperPipes.append(newPipe[0])
+    #         self.lowerPipes.append(newPipe[1])
 
-        # remove first pipe if its out of the screen
-        if self.upperPipes[0]['x'] < -PIPE_WIDTH:
-            self.upperPipes.pop(0)
-            self.lowerPipes.pop(0)
+    #     # remove first pipe if its out of the screen
+    #     if self.upperPipes[0]['x'] < -PIPE_WIDTH:
+    #         self.upperPipes.pop(0)
+    #         self.lowerPipes.pop(0)
 
-        # check if crash here
-        isCrash = checkCrash({'x': self.playerx, 'y': self.playery,
-                              'index': self.playerIndex},
-                             self.upperPipes, self.lowerPipes)
-        if isCrash:
-            terminal = True
-            reward = -1
+    #     # check if crash here
+    #     isCrash = checkCrash({'x': self.playerx, 'y': self.playery,
+    #                           'index': self.playerIndex},
+    #                          self.upperPipes, self.lowerPipes)
+    #     if isCrash:
+    #         terminal = True
+    #         reward = -1
 
-        self.playerx = prev_player_x
-        self.playery = prev_player_y
-        self.playerVelY = prev_playerVelyY
-        self.playerFlapped = prev_playerFlapped
-        self.score = prev_score
-        self.upperPipes = prev_upperPipes
-        self.lowerPipes = prev_lowerPipes
+    #     self.playerx = prev_player_x
+    #     self.playery = prev_player_y
+    #     self.playerVelY = prev_playerVelyY
+    #     self.playerFlapped = prev_playerFlapped
+    #     self.score = prev_score
+    #     self.upperPipes = prev_upperPipes
+    #     self.lowerPipes = prev_lowerPipes
 
-        return reward, terminal
+    #     return reward, terminal
 
     @property
     def state(self):
@@ -227,11 +228,11 @@ class GameState:
             PIPE_WIDTH / 2 > self.playerx else self.lowerPipes[1]
 
         return {
-            "x": self.playerx,
+            # "x": self.playerx,
             "y": self.playery,
             "vel_y": self.playerVelY,
-            "upper_pipe_x": pipe["x"],
-            "upper_pipe_y": pipe["y"] + PIPEGAPSIZE,
+            # "upper_pipe_x": pipe["x"],
+            # "upper_pipe_y": pipe["y"] + PIPEGAPSIZE,
             "lower_pipe_x": pipe["x"],
             "lower_pipe_y": pipe["y"]
         }
@@ -241,7 +242,8 @@ def getRandomPipe():
     """returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
     gapYs = [20, 30, 40, 50, 60, 70, 80, 90]
-    index = random.randint(0, len(gapYs) - 1)
+    # gapYs = [50]
+    index = np.random.randint(0, len(gapYs))
     gapY = gapYs[index]
 
     gapY += int(BASEY * 0.2)

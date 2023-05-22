@@ -72,19 +72,15 @@ class DoubleDQN(nn.Module):
 def policy(
     model: QualityEstimator,
     state: torch.Tensor,
-    temp: float
-) -> tp.Tuple[float, float]:
+    epsilon: float
+) -> tp.Tuple[torch.Tensor, torch.Tensor]:
     """ Epsilon greedy """
 
-    predicted_actions_rewards = model(state)
+    predicted_actions_rewards = model(state)[0]
 
-    probas = nn.functional.softmax(
-        predicted_actions_rewards / temp, dim=0).detach().cpu().numpy()
-    print(probas)
-
-    if np.random.uniform(0, 1) < 5e-2:
+    if np.random.uniform() < epsilon:
         action = np.random.choice(len(predicted_actions_rewards))
     else:
-        action = np.random.choice(len(predicted_actions_rewards), p=probas)
+        action = torch.argmax(predicted_actions_rewards)
 
-    return action, predicted_actions_rewards[action]
+    return torch.tensor(action, dtype=torch.long).view(1, 1).to(state.device), torch.tensor(predicted_actions_rewards[action], dtype=torch.float32).view(1, 1).to(state.device)
