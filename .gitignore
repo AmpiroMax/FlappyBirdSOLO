@@ -1,6 +1,10 @@
+#vscode
+*.vscode
+
 # Python
 __pycache__
 src.egg-info
+*venv
 
 # Other
 .DS*
