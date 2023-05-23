@@ -79,8 +79,14 @@ def policy(
     predicted_actions_rewards = model(state)[0]
 
     if np.random.uniform() < epsilon:
-        action = np.random.choice(len(predicted_actions_rewards))
+        action = torch.randint(
+            high=len(predicted_actions_rewards),
+            size=(1, ),
+            dtype=torch.long
+        ).view(1, 1).to(state.device)
     else:
-        action = torch.argmax(predicted_actions_rewards)
+        action = torch.argmax(
+            predicted_actions_rewards
+        ).view(1, 1).to(state.device)
 
-    return torch.tensor(action, dtype=torch.long).view(1, 1).to(state.device), torch.tensor(predicted_actions_rewards[action], dtype=torch.float32).view(1, 1).to(state.device)
+    return action, predicted_actions_rewards[action].view(1, 1).to(state.device)
