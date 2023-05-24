@@ -4,12 +4,13 @@ from pydantic import BaseModel, Field, validator
 
 
 class ConfigData(BaseModel):
-    session_num: int = Field(default=1000, gt=0, type=int)
+    sessions_num: int = Field(default=1000, gt=0, type=int)
     gamma: float = Field(default=0.99, ge=0, le=1, type=float)
     lr: float = Field(default=1e-2, gt=0, type=float)
     lr_decay: float = Field(default=0.99, gt=0, le=1, type=float)
     state_dim: int = Field(default=4, gt=0, type=int)
     action_dim: int = Field(default=2, gt=0, type=int)
+    hid_channel: Optional[List[int]] = [64, 256, 256, 64]
     hid_dim: List[int] = [64, 256, 256, 64]
     eps_init: float = Field(default=0.5, ge=0, le=1, type=float)
     eps_last: float = Field(default=1e-5, ge=0, lt=1, type=float)
@@ -25,17 +26,20 @@ class ConfigData(BaseModel):
     max_session_score: int = Field(default=150, ge=0, type=int)
     player_flap_acc: int = Field(default=-4, lt=0, type=int)
     reward_threshold: int = -90
+    dropout: float = 0.5
+    img_num_in_state: int = 3
+    device: str = "cpu"
 
     @validator('hid_dim')
     def validate_hid_dim(cls, field):
-        
+
         if not len(field):
             message = 'hid_dim must not be empty;'
             raise ValueError(message)
-        
+
         if not all(map(lambda x: x > 0, field)):
             message = 'all values in hid_dim should be '
             message += 'greater than zero;'
             raise ValueError(message)
-        
+
         return field

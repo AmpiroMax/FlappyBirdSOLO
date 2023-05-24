@@ -63,7 +63,7 @@ class GameState:
     def frame_step(self, input_action, game_mode=False):
         pygame.event.pump()
 
-        reward = 0.1  # FIXME придумайте стратегию награды/наказания
+        reward = 0
         terminal = False
 
         # input_actions == 0: do nothing
@@ -79,7 +79,7 @@ class GameState:
             pipeMidPos = pipe['x'] + PIPE_WIDTH / 2
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 self.score += 1
-                reward = 5  # FIXME придумайте стратегию награды/наказания
+                reward = 1
 
         # playerIndex basex change
         if (self.loopIter + 1) % 3 == 0:
@@ -94,9 +94,9 @@ class GameState:
         # player's movement
         if self.playerVelY < self.playerMaxVelY and not self.playerFlapped:
             self.playerVelY += self.playerAccY
+            # self.playerRot += 45
         if self.playerFlapped:
             self.playerFlapped = False
-            # self.playerRot += 45
         self.playery += min(self.playerVelY, BASEY -
                             self.playery - PLAYER_HEIGHT)
         if self.playery < 0:
@@ -123,9 +123,9 @@ class GameState:
                               'index': self.playerIndex},
                              self.upperPipes, self.lowerPipes)
         if isCrash:
-            terminal = True
             self.__init__()
-            reward = -0.5  # FIXME придумайте стратегию награды/наказания
+            terminal = True
+            reward = -1000
 
         # draw sprites
         SCREEN.blit(IMAGES['background'], (0, 0))
@@ -151,20 +151,44 @@ class GameState:
         return image_data, reward, terminal
 
     @property
+    def image(self):
+        return pygame.surfarray.array3d(pygame.display.get_surface())
+
+    @property
     def state(self):
 
         pipe = self.lowerPipes[0] if self.lowerPipes[0]["x"] + \
             PIPE_WIDTH / 2 > self.playerx else self.lowerPipes[1]
 
         return {
-            # "x": self.playerx,
+            "x": self.playerx,
             "y": self.playery,
-            "vel_y": self.playerVelY,
+            "pipex": pipe["x"] + PIPE_WIDTH / 2,
+            "pipey": pipe["y"] - PIPEGAPSIZE / 2,
+            "vel_y": self.playerVelY
             # "upper_pipe_x": pipe["x"],
             # "upper_pipe_y": pipe["y"] + PIPEGAPSIZE,
-            "lower_pipe_x": pipe["x"],
-            "lower_pipe_y": pipe["y"]
+
         }
+
+        # New state version
+        # return {
+        #     # "x": self.playerx,
+        #     "dx": pipe["x"] + PIPE_WIDTH / 2 - self.playerx,
+        #     "dy": (pipe["y"] - PIPEGAPSIZE / 2) - self.playery,
+        #     "vel_y": self.playerVelY
+        #     # "upper_pipe_x": pipe["x"],
+        #     # "upper_pipe_y": pipe["y"] + PIPEGAPSIZE,
+
+        # }
+
+        # Old version of state
+        # return {
+        #     "y": self.playery,
+        #     "vel_y": self.playerVelY,
+        #     "lower_pipe_x": pipe["x"],
+        #     "lower_pipe_y": pipe["y"]
+        # }
 
 
 def getRandomPipe():
