@@ -1,6 +1,6 @@
 # Flappy Bird
 
-![](assets/game_screen.png)
+![](assets/2023-05-23 15-17-21.gif)
 
 ## Что хотелось сделать
 
